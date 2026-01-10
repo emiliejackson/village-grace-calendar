@@ -23,19 +23,62 @@ async function fetchCalendarEvents() {
     const events = await ical.async.fromURL(GOOGLE_CALENDAR_ICS_URL);
     
     const calendarEvents: any[] = [];
+    const today = new Date();
+    const rangeStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const rangeEnd = new Date(today.getFullYear(), today.getMonth() + 6, 0);
+    
     for (const event of Object.values(events)) {
       if (event.type === "VEVENT") {
-        calendarEvents.push({
-          id: `ical-${event.uid}`,
-          title: event.summary || "Untitled Event",
-          description: event.description || null,
-          startTime: event.start,
-          endTime: event.end || null,
-          location: event.location || null,
-          imageUrl: null,
-          createdAt: new Date(),
-          source: "google_calendar"
-        });
+        const vevent = event as any;
+        
+        if (vevent.rrule) {
+          try {
+            const dates = vevent.rrule.between(rangeStart, rangeEnd);
+            const duration = vevent.end && vevent.start 
+              ? new Date(vevent.end).getTime() - new Date(vevent.start).getTime()
+              : 0;
+            
+            for (const date of dates) {
+              const endDate = duration ? new Date(date.getTime() + duration) : null;
+              calendarEvents.push({
+                id: `ical-${vevent.uid}-${date.getTime()}`,
+                title: vevent.summary || "Untitled Event",
+                description: vevent.description || null,
+                startTime: date,
+                endTime: endDate,
+                location: vevent.location || null,
+                imageUrl: null,
+                createdAt: new Date(),
+                source: "google_calendar"
+              });
+            }
+          } catch (rruleError) {
+            console.error("Error expanding recurring event:", rruleError);
+            calendarEvents.push({
+              id: `ical-${vevent.uid}`,
+              title: vevent.summary || "Untitled Event",
+              description: vevent.description || null,
+              startTime: vevent.start,
+              endTime: vevent.end || null,
+              location: vevent.location || null,
+              imageUrl: null,
+              createdAt: new Date(),
+              source: "google_calendar"
+            });
+          }
+        } else {
+          calendarEvents.push({
+            id: `ical-${vevent.uid}`,
+            title: vevent.summary || "Untitled Event",
+            description: vevent.description || null,
+            startTime: vevent.start,
+            endTime: vevent.end || null,
+            location: vevent.location || null,
+            imageUrl: null,
+            createdAt: new Date(),
+            source: "google_calendar"
+          });
+        }
       }
     }
     
