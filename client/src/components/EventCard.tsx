@@ -1,9 +1,9 @@
-import { type Event } from "@shared/schema";
+import { type MergedEvent } from "@shared/schema";
 import { format } from "date-fns";
 import { MapPin, Clock } from "lucide-react";
 
 interface EventCardProps {
-  event: Event;
+  event: MergedEvent;
 }
 
 export function EventCard({ event }: EventCardProps) {

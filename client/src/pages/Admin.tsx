@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Plus, LogOut, Pencil, Trash2, Calendar } from "lucide-react";
 import { format } from "date-fns";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
   AlertDialog,
@@ -26,6 +26,15 @@ export default function Admin() {
   const deleteMutation = useDeleteEvent();
   const [, setLocation] = useLocation();
 
+  // Filter to only database events (can be edited)
+  const dbEvents = useMemo(() => {
+    return events?.filter(e => e.source === "database" || typeof e.id === "number") || [];
+  }, [events]);
+
+  const calendarEventsCount = useMemo(() => {
+    return (events?.length || 0) - dbEvents.length;
+  }, [events, dbEvents]);
+
   // Redirect if not logged in
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -41,7 +50,7 @@ export default function Admin() {
     );
   }
 
-  if (!user) return null; // Will redirect via useEffect
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background font-sans">
@@ -86,13 +95,17 @@ export default function Admin() {
             <div className="p-12 flex justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
-          ) : !events || events.length === 0 ? (
+          ) : dbEvents.length === 0 ? (
             <div className="p-12 text-center">
               <div className="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Calendar className="w-6 h-6 text-gray-400" />
               </div>
-              <h3 className="font-medium text-gray-900">No events found</h3>
-              <p className="text-sm text-muted-foreground mt-1 mb-4">Create your first event to get started.</p>
+              <h3 className="font-medium text-gray-900">No manageable events found</h3>
+              <p className="text-sm text-muted-foreground mt-1 mb-4">
+                {calendarEventsCount > 0 
+                  ? `${calendarEventsCount} event(s) are imported from Google Calendar and can be edited there.`
+                  : "Create your first event to get started."}
+              </p>
               <AdminEventDialog 
                 trigger={
                   <Button variant="outline" size="sm">Create Event</Button>
@@ -101,6 +114,11 @@ export default function Admin() {
             </div>
           ) : (
             <div className="overflow-x-auto">
+              {calendarEventsCount > 0 && (
+                <div className="px-4 py-3 bg-blue-50 border-b border-blue-100 text-sm text-blue-700">
+                  {calendarEventsCount} event(s) from Google Calendar are shown on the public page but cannot be edited here.
+                </div>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50/50">
@@ -111,7 +129,7 @@ export default function Admin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {events
+                  {dbEvents
                     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
                     .map((event) => (
                     <TableRow key={event.id} className="hover:bg-gray-50/50 transition-colors">
@@ -165,7 +183,7 @@ export default function Admin() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction 
-                                  onClick={() => deleteMutation.mutate(event.id)}
+                                  onClick={() => deleteMutation.mutate(event.id as number)}
                                   className="bg-destructive hover:bg-destructive/90 text-white"
                                 >
                                   {deleteMutation.isPending ? "Deleting..." : "Delete"}

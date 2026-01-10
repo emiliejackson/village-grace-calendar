@@ -4,6 +4,50 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import ical from "node-ical";
+
+const GOOGLE_CALENDAR_ICS_URL = process.env.GOOGLE_CALENDAR_ICS_URL || "";
+
+let cachedCalendarEvents: any[] = [];
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+async function fetchCalendarEvents() {
+  const now = Date.now();
+  if (now - cacheTimestamp < CACHE_DURATION && cachedCalendarEvents.length > 0) {
+    return cachedCalendarEvents;
+  }
+
+  try {
+    console.log("Fetching Google Calendar events...");
+    const events = await ical.async.fromURL(GOOGLE_CALENDAR_ICS_URL);
+    
+    const calendarEvents: any[] = [];
+    for (const event of Object.values(events)) {
+      if (event.type === "VEVENT") {
+        calendarEvents.push({
+          id: `ical-${event.uid}`,
+          title: event.summary || "Untitled Event",
+          description: event.description || null,
+          startTime: event.start,
+          endTime: event.end || null,
+          location: event.location || null,
+          imageUrl: null,
+          createdAt: new Date(),
+          source: "google_calendar"
+        });
+      }
+    }
+    
+    cachedCalendarEvents = calendarEvents;
+    cacheTimestamp = now;
+    console.log(`Fetched ${calendarEvents.length} events from Google Calendar`);
+    return calendarEvents;
+  } catch (error) {
+    console.error("Error fetching Google Calendar events:", error);
+    return cachedCalendarEvents; // Return cached data on error
+  }
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -16,10 +60,24 @@ export async function registerRoutes(
 
   // === API ROUTES ===
 
-  // Public: List Events
+  // Public: List Events (merged from DB + Google Calendar)
   app.get(api.events.list.path, async (req, res) => {
-    const events = await storage.getEvents();
-    res.json(events);
+    try {
+      // Fetch from both sources in parallel
+      const [dbEvents, calendarEvents] = await Promise.all([
+        storage.getEvents(),
+        GOOGLE_CALENDAR_ICS_URL ? fetchCalendarEvents() : Promise.resolve([])
+      ]);
+      
+      // Merge and sort by start time
+      const allEvents = [...dbEvents.map(e => ({ ...e, source: "database" })), ...calendarEvents];
+      allEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      
+      res.json(allEvents);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({ message: "Failed to fetch events" });
+    }
   });
 
   // Public: Get Event

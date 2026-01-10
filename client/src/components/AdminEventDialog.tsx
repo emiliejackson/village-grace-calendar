@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type Event, type CreateEventRequest } from "@shared/schema";
+import { type MergedEvent, type CreateEventRequest } from "@shared/schema";
 import { useCreateEvent, useUpdateEvent } from "@/hooks/use-events";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface AdminEventDialogProps {
-  event?: Event;
+  event?: MergedEvent;
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -68,7 +68,7 @@ export function AdminEventDialog({ event, trigger, open: controlledOpen, onOpenC
     try {
       if (isEditing && event) {
         await updateMutation.mutateAsync({
-          id: event.id,
+          id: event.id as number,
           ...formData,
         });
       } else {

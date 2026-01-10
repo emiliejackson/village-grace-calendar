@@ -26,3 +26,16 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 
 export type CreateEventRequest = InsertEvent;
 export type UpdateEventRequest = Partial<InsertEvent>;
+
+// Merged event type that includes events from Google Calendar
+export interface MergedEvent {
+  id: number | string;
+  title: string;
+  description: string | null;
+  startTime: Date | string;
+  endTime: Date | string | null;
+  location: string | null;
+  imageUrl: string | null;
+  createdAt: Date | string | null;
+  source?: "database" | "google_calendar";
+}

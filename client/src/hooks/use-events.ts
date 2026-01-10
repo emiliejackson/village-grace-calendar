@@ -1,15 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type CreateEventRequest, type UpdateEventRequest } from "@shared/routes";
+import { type MergedEvent } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 export function useEvents() {
-  return useQuery({
+  return useQuery<MergedEvent[]>({
     queryKey: [api.events.list.path],
     queryFn: async () => {
       const res = await fetch(api.events.list.path);
       if (!res.ok) throw new Error("Failed to fetch events");
-      const data = await res.json();
-      return api.events.list.responses[200].parse(data);
+      return res.json();
     },
   });
 }

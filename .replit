@@ -40,3 +40,8 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_log_in_with_replit:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+GOOGLE_CALENDAR_ICS_URL = "https://calendar.google.com/calendar/ical/35b871e27d33f78e01758abc07c391d02415fd98dc9d965d08594ca1174eed4c%40group.calendar.google.com/private-ddf57f29006a634cca16ab3655d3c443/basic.ics"
