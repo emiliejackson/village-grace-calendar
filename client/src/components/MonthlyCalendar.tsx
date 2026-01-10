@@ -2,10 +2,58 @@ import { useState, useMemo } from "react";
 import { type MergedEvent } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 
 interface MonthlyCalendarProps {
   events: MergedEvent[];
+}
+
+function getDateParts(dateStr: string) {
+  const d = new Date(dateStr);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth(),
+    day: d.getUTCDate(),
+    hours: d.getUTCHours(),
+    minutes: d.getUTCMinutes()
+  };
+}
+
+function isAllDayEvent(event: MergedEvent): boolean {
+  const start = getDateParts(event.startTime);
+  if (start.hours !== 0 || start.minutes !== 0) return false;
+  
+  if (event.endTime) {
+    const end = getDateParts(event.endTime);
+    if (end.hours !== 0 || end.minutes !== 0) return false;
+  }
+  return true;
+}
+
+function dayToYMD(day: Date): { year: number; month: number; day: number } {
+  return { year: day.getFullYear(), month: day.getMonth(), day: day.getDate() };
+}
+
+function isInAllDayRange(event: MergedEvent, day: Date): boolean {
+  const start = getDateParts(event.startTime);
+  const dayParts = dayToYMD(day);
+  
+  const startNum = start.year * 10000 + start.month * 100 + start.day;
+  const dayNum = dayParts.year * 10000 + dayParts.month * 100 + dayParts.day;
+  
+  if (event.endTime) {
+    const end = getDateParts(event.endTime);
+    const endNum = end.year * 10000 + end.month * 100 + end.day;
+    return dayNum >= startNum && dayNum < endNum;
+  }
+  
+  return dayNum === startNum;
+}
+
+function isSameDayLocal(date1: Date, date2: Date): boolean {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
 }
 
 export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
@@ -23,9 +71,13 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
 
   const getEventsForDay = (day: Date) => {
     return events.filter(event => {
+      if (isAllDayEvent(event)) {
+        return isInAllDayRange(event, day);
+      }
+      
       const eventStart = new Date(event.startTime);
       const eventEnd = event.endTime ? new Date(event.endTime) : eventStart;
-      return isSameDay(eventStart, day) || 
+      return isSameDayLocal(eventStart, day) || 
         (eventStart <= day && eventEnd >= day);
     });
   };
@@ -90,7 +142,7 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
         {calendarDays.map((day, index) => {
           const dayEvents = getEventsForDay(day);
           const isCurrentMonth = isSameMonth(day, currentDate);
-          const isToday = isSameDay(day, new Date());
+          const isToday = isSameDayLocal(day, new Date());
 
           return (
             <div
@@ -160,11 +212,14 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
                 <Clock className="w-4 h-4 mt-0.5 text-[#65809A]" />
                 <div>
                   <p className="font-medium text-gray-900">
-                    {format(new Date(selectedEvent.startTime), "EEEE, MMMM d, yyyy")}
+                    {isAllDayEvent(selectedEvent) 
+                      ? format(new Date(getDateParts(selectedEvent.startTime).year, getDateParts(selectedEvent.startTime).month, getDateParts(selectedEvent.startTime).day), "EEEE, MMMM d, yyyy")
+                      : format(new Date(selectedEvent.startTime), "EEEE, MMMM d, yyyy")}
                   </p>
                   <p>
-                    {format(new Date(selectedEvent.startTime), "h:mm a")}
-                    {selectedEvent.endTime && ` - ${format(new Date(selectedEvent.endTime), "h:mm a")}`}
+                    {isAllDayEvent(selectedEvent) 
+                      ? "All Day"
+                      : `${format(new Date(selectedEvent.startTime), "h:mm a")}${selectedEvent.endTime ? ` - ${format(new Date(selectedEvent.endTime), "h:mm a")}` : ""}`}
                   </p>
                 </div>
               </div>
