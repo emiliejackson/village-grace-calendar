@@ -1,0 +1,86 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "roc-grotesk-condensed",
+      "count": 52
+    },
+    {
+      "family": "Libre Baskerville",
+      "count": 11
+    },
+    {
+      "family": "Moulin",
+      "count": 4
+    },
+    {
+      "family": "serif",
+      "count": 4
+    }
+  ],
+  "colors": {
+    "primary": "#65809A",
+    "accent": "#65809A",
+    "background": "#EBEAEB",
+    "textPrimary": "#000000",
+    "link": "#65809A"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Moulin",
+      "heading": "Moulin"
+    },
+    "fontStacks": {
+      "body": [
+        "Moulin",
+        "serif"
+      ],
+      "heading": [
+        "Moulin",
+        "serif"
+      ],
+      "paragraph": [
+        "Libre Baskerville"
+      ]
+    },
+    "fontSizes": {
+      "h1": "57.6px",
+      "h2": "39.2px",
+      "body": "15.2px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "0px"
+  },
+  "components": {},
+  "images": {
+    "logo": "File saved at: attached_assets/logo.webp",
+    "favicon": "File saved at: attached_assets/favicon.webp",
+    "ogImage": "http://static1.squarespace.com/static/685b314e32c5976333f64101/t/68f6e7819bbf112c178b6107/1761011585448/Village_Grace_logo_H1s_web_black.png?format=1500w"
+  },
+  "__framework_hints": [],
+  "__llm_logo_reasoning": {
+    "selectedIndex": 1,
+    "reasoning": "Strong indicators: header logo linking to homepage, header location, visible, top-left position, src contains logo, class contains logo, alt exactly matches brand name \"Village Grace\", reasonable size. Score: 130 (clear winner by 77 points)",
+    "confidence": 0.9
+  },
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": -1,
+      "text": "N/A",
+      "reasoning": "LLM failed"
+    },
+    "secondary": {
+      "index": -1,
+      "text": "N/A",
+      "reasoning": "LLM failed"
+    },
+    "confidence": 0
+  },
+  "confidence": {
+    "buttons": 0,
+    "colors": 0,
+    "overall": 0
+  }
+}
