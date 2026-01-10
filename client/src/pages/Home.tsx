@@ -40,9 +40,6 @@ export default function Home() {
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1510936111840-65e151ad71bb?q=80&w=2090&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
         
         <div className="container mx-auto px-4 relative z-10 text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6 tracking-tight">
-            Gather With Us
-          </h1>
           <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto font-light leading-relaxed">
             Join us for upcoming services, community events, and gatherings. 
             We look forward to seeing you.
