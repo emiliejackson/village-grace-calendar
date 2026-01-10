@@ -83,8 +83,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
-        serif: ["var(--font-serif)"],
+        serif: ["'Libre Baskerville'", "serif"],
+        sans: ["'Inter'", "sans-serif"],
         mono: ["var(--font-mono)"],
       },
       keyframes: {
