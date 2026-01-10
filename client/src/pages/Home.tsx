@@ -18,7 +18,6 @@ export default function Home() {
             <a href="https://www.villagegrace.org/">
               <img src={logo} alt="Village Grace Logo" className="h-12 w-auto" />
             </a>
-            <div className="hidden md:block w-px h-8 bg-gray-200 mx-2" />
             <span className="hidden md:block font-serif text-xl font-bold tracking-tight text-[#65809A]">
               Calendar
             </span>
