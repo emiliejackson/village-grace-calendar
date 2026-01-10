@@ -15,7 +15,9 @@ export default function Home() {
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Village Grace Logo" className="h-12 w-auto" />
+            <a href="https://www.villagegrace.org/">
+              <img src={logo} alt="Village Grace Logo" className="h-12 w-auto" />
+            </a>
             <div className="hidden md:block w-px h-8 bg-gray-200 mx-2" />
             <span className="hidden md:block font-serif text-xl font-bold tracking-tight text-[#65809A]">
               Calendar
