@@ -8,10 +8,10 @@ import { Link } from "wouter";
 export default function Home() {
   const { data: events, isLoading, error } = useEvents();
 
-  // Sort events by date
-  const sortedEvents = events?.slice().sort((a, b) => 
-    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  );
+  // Filter to only Google Calendar events and sort by date
+  const sortedEvents = events
+    ?.filter(e => e.source === "google_calendar")
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -35,14 +35,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="bg-[#65809A] text-white py-16 md:py-24 relative overflow-hidden">
-        <div className="container mx-auto px-4 relative z-10 text-center">
-        </div>
-      </section>
-
       {/* Events Grid */}
-      <main className="flex-1 container mx-auto px-4 py-16 -mt-8 relative z-20">
+      <main className="flex-1 container mx-auto px-4 py-16 relative z-20">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24">
             <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
