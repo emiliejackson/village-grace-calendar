@@ -25,7 +25,7 @@ export default function Home() {
             href="https://www.villagegrace.org/" 
             className="text-sm font-medium text-gray-500 hover:text-primary transition-colors"
           >
-            Back to Main Site &rarr;
+            Back to Village Grace &rarr;
           </a>
         </div>
       </header>
