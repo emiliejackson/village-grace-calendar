@@ -11,7 +11,7 @@ export default function Home() {
   const calendarEvents = events?.filter(e => e.source === "google_calendar") || [];
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-[#EBEAEB]">
+    <div className="min-h-screen flex flex-col font-sans bg-[#ffffff]">
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -30,7 +30,6 @@ export default function Home() {
           </a>
         </div>
       </header>
-
       <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24">
@@ -46,7 +45,6 @@ export default function Home() {
           <MonthlyCalendar events={calendarEvents} />
         )}
       </main>
-
       <footer className="bg-white border-t border-gray-100 py-8 mt-auto">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
