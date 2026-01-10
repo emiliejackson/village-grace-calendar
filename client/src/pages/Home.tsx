@@ -1,21 +1,17 @@
 import { useEvents } from "@/hooks/use-events";
-import { EventCard } from "@/components/EventCard";
+import { MonthlyCalendar } from "@/components/MonthlyCalendar";
 import { Loader2, Calendar as CalendarIcon } from "lucide-react";
 import logo from "@assets/logo.webp";
-import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 export default function Home() {
   const { data: events, isLoading, error } = useEvents();
 
-  // Filter to only Google Calendar events and sort by date
-  const sortedEvents = events
-    ?.filter(e => e.source === "google_calendar")
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  // Filter to only Google Calendar events
+  const calendarEvents = events?.filter(e => e.source === "google_calendar") || [];
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
-      {/* Header */}
+    <div className="min-h-screen flex flex-col font-sans bg-[#EBEAEB]">
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -35,8 +31,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Events Grid */}
-      <main className="flex-1 container mx-auto px-4 py-16 relative z-20">
+      <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24">
             <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
@@ -47,28 +42,13 @@ export default function Home() {
             <p className="text-destructive font-medium mb-2">Unable to load events</p>
             <p className="text-sm text-gray-500">Please try refreshing the page.</p>
           </div>
-        ) : sortedEvents && sortedEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {sortedEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
         ) : (
-          <div className="text-center py-24 bg-white rounded-2xl shadow-sm border border-dashed border-gray-200">
-            <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CalendarIcon className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-serif font-bold text-gray-900 mb-2">No Upcoming Events</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Check back soon for updates on our gathering times and special events.
-            </p>
-          </div>
+          <MonthlyCalendar events={calendarEvents} />
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 py-12 mt-auto">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="bg-white border-t border-gray-100 py-8 mt-auto">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
             <img src={logo} alt="Village Grace Logo" className="h-8 w-auto" />
             <span className="font-serif font-bold text-gray-700 text-sm">Village Grace</span>
