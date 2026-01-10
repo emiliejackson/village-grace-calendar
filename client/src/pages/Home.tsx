@@ -50,7 +50,7 @@ export default function Home() {
       <footer className="bg-white border-t border-gray-100 py-8 mt-auto">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
-            <img src={logo} alt="Village Grace Logo" className="h-8 w-auto" />
+            <img src={logo} alt="Village Grace Logo" className="h-12 w-auto" />
           </div>
           
           <div className="text-sm text-gray-500 text-center md:text-right">
