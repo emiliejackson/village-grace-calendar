@@ -5,9 +5,9 @@ import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 
 function parseDescription(text: string): React.ReactNode {
-  const hasHtmlLinks = /<a\s+[^>]*href=/i.test(text);
+  const hasHtml = /<(a|ul|li|ol|p|br|strong|b|i|em|u)\b/i.test(text);
   
-  if (hasHtmlLinks) {
+  if (hasHtml) {
     let sanitizedHtml = text
       .replace(/<script[^>]*>.*?<\/script>/gi, '')
       .replace(/on\w+\s*=/gi, '')
@@ -15,13 +15,14 @@ function parseDescription(text: string): React.ReactNode {
         const hrefMatch = attrs.match(/href=["']([^"']+)["']/i);
         const href = hrefMatch ? hrefMatch[1] : '#';
         return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-[#65809A] hover:underline">`;
-      });
-    
-    sanitizedHtml = sanitizedHtml.replace(/^[\s]*[-•*]\s+/gm, '<li class="ml-4">');
-    sanitizedHtml = sanitizedHtml.replace(/<li class="ml-4">([^<]*?)(?=<li|$)/g, '<li class="ml-4 list-disc list-inside">$1</li>');
+      })
+      .replace(/<ul>/gi, '<ul class="list-disc list-inside ml-4 my-2">')
+      .replace(/<ol>/gi, '<ol class="list-decimal list-inside ml-4 my-2">')
+      .replace(/<li>/gi, '<li class="mb-1">');
     
     return (
       <div 
+        className="prose prose-sm max-w-none"
         dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         onClick={(e) => e.stopPropagation()}
       />
