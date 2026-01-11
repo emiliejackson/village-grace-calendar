@@ -18,6 +18,8 @@ function parseDescription(text: string): React.ReactNode {
       })
       .replace(/<ul>/gi, '<ul class="list-disc list-inside ml-4 my-1">')
       .replace(/<ol>/gi, '<ol class="list-decimal list-inside ml-4 my-1">')
+      .replace(/<li>\s*<p>/gi, '<li class=""><span>')
+      .replace(/<\/p>\s*<\/li>/gi, '</span></li>')
       .replace(/<li>/gi, '<li class="">')
       .replace(/<p>/gi, '<p class="my-1">');
     
