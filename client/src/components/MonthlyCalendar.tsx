@@ -8,7 +8,7 @@ function parseDescription(text: string): React.ReactNode {
   const hasHtmlLinks = /<a\s+[^>]*href=/i.test(text);
   
   if (hasHtmlLinks) {
-    const sanitizedHtml = text
+    let sanitizedHtml = text
       .replace(/<script[^>]*>.*?<\/script>/gi, '')
       .replace(/on\w+\s*=/gi, '')
       .replace(/<a\s+([^>]*)>/gi, (match, attrs) => {
@@ -16,6 +16,9 @@ function parseDescription(text: string): React.ReactNode {
         const href = hrefMatch ? hrefMatch[1] : '#';
         return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-[#65809A] hover:underline">`;
       });
+    
+    sanitizedHtml = sanitizedHtml.replace(/^[\s]*[-•*]\s+/gm, '<li class="ml-4">');
+    sanitizedHtml = sanitizedHtml.replace(/<li class="ml-4">([^<]*?)(?=<li|$)/g, '<li class="ml-4 list-disc list-inside">$1</li>');
     
     return (
       <div 
@@ -26,8 +29,29 @@ function parseDescription(text: string): React.ReactNode {
   }
   
   const lines = text.split('\n');
+  const bulletRegex = /^[\s]*[-•*]\s+(.*)$/;
   
   return lines.map((line, lineIndex) => {
+    const bulletMatch = line.match(bulletRegex);
+    
+    if (bulletMatch) {
+      const content = bulletMatch[1];
+      return (
+        <li key={lineIndex} className="ml-4 list-disc list-inside">
+          {parseLine(content, lineIndex)}
+        </li>
+      );
+    }
+    
+    return (
+      <Fragment key={lineIndex}>
+        {parseLine(line, lineIndex)}
+        {lineIndex < lines.length - 1 && <br />}
+      </Fragment>
+    );
+  });
+  
+  function parseLine(line: string, lineIndex: number): React.ReactNode {
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     
@@ -73,13 +97,8 @@ function parseDescription(text: string): React.ReactNode {
       parts.push(line.slice(lastIndex));
     }
     
-    return (
-      <Fragment key={lineIndex}>
-        {parts.length > 0 ? parts : line}
-        {lineIndex < lines.length - 1 && <br />}
-      </Fragment>
-    );
-  });
+    return parts.length > 0 ? parts : line;
+  }
 }
 
 interface MonthlyCalendarProps {
