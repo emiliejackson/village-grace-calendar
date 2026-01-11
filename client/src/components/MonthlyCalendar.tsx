@@ -1,15 +1,93 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { type MergedEvent } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 
+function parseDescription(text: string): React.ReactNode {
+  const hasHtmlLinks = /<a\s+[^>]*href=/i.test(text);
+  
+  if (hasHtmlLinks) {
+    const sanitizedHtml = text
+      .replace(/<script[^>]*>.*?<\/script>/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .replace(/<a\s+([^>]*)>/gi, (match, attrs) => {
+        const hrefMatch = attrs.match(/href=["']([^"']+)["']/i);
+        const href = hrefMatch ? hrefMatch[1] : '#';
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-[#65809A] hover:underline">`;
+      });
+    
+    return (
+      <div 
+        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+        onClick={(e) => e.stopPropagation()}
+      />
+    );
+  }
+  
+  const lines = text.split('\n');
+  
+  return lines.map((line, lineIndex) => {
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    
+    const combinedRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    let match;
+    
+    while ((match = combinedRegex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(line.slice(lastIndex, match.index));
+      }
+      
+      const matchedText = match[0];
+      if (match[1]) {
+        parts.push(
+          <a
+            key={`${lineIndex}-${match.index}`}
+            href={matchedText}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#65809A] hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {matchedText}
+          </a>
+        );
+      } else if (match[2]) {
+        parts.push(
+          <a
+            key={`${lineIndex}-${match.index}`}
+            href={`mailto:${matchedText}`}
+            className="text-[#65809A] hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {matchedText}
+          </a>
+        );
+      }
+      
+      lastIndex = match.index + matchedText.length;
+    }
+    
+    if (lastIndex < line.length) {
+      parts.push(line.slice(lastIndex));
+    }
+    
+    return (
+      <Fragment key={lineIndex}>
+        {parts.length > 0 ? parts : line}
+        {lineIndex < lines.length - 1 && <br />}
+      </Fragment>
+    );
+  });
+}
+
 interface MonthlyCalendarProps {
   events: MergedEvent[];
 }
 
-function getDateParts(dateStr: string) {
-  const d = new Date(dateStr);
+function getDateParts(dateInput: string | Date) {
+  const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   return {
     year: d.getUTCFullYear(),
     month: d.getUTCMonth(),
@@ -233,7 +311,9 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
 
               {selectedEvent.description && (
                 <div className="pt-3 border-t border-gray-100">
-                  <p className="whitespace-pre-wrap">{selectedEvent.description}</p>
+                  <div className="text-gray-700 leading-relaxed">
+                    {parseDescription(selectedEvent.description)}
+                  </div>
                 </div>
               )}
             </div>
