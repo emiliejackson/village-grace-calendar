@@ -160,6 +160,7 @@ function isSameDayLocal(date1: Date, date2: Date): boolean {
 export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<MergedEvent | null>(null);
+  const [selectedDay, setSelectedDay] = useState<{ day: Date; events: MergedEvent[] } | null>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -283,8 +284,9 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
                 ))}
                 {dayEvents.length > 2 && (
                   <button
-                    onClick={() => setSelectedEvent(dayEvents[0])}
+                    onClick={() => setSelectedDay({ day, events: dayEvents })}
                     className="text-xs text-gray-500 hover:text-[#65809A] px-1.5"
+                    data-testid={`more-events-${format(day, 'yyyy-MM-dd')}`}
                   >
                     +{dayEvents.length - 2} more
                   </button>
@@ -345,6 +347,52 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
               className="w-full mt-6"
               onClick={() => setSelectedEvent(null)}
               data-testid="button-close-event"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {selectedDay && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedDay(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-serif font-bold text-gray-900 mb-4">
+              {format(selectedDay.day, "EEEE, MMMM d, yyyy")}
+            </h3>
+            
+            <div className="space-y-2">
+              {selectedDay.events.map((event) => (
+                <button
+                  key={event.id}
+                  onClick={() => {
+                    setSelectedDay(null);
+                    setSelectedEvent(event);
+                  }}
+                  className="w-full text-left p-3 rounded-lg bg-[#65809A]/10 hover:bg-[#65809A]/20 transition-colors"
+                  data-testid={`day-event-${event.id}`}
+                >
+                  <p className="font-medium text-[#65809A]">{event.title}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isAllDayEvent(event) 
+                      ? "All Day"
+                      : format(new Date(event.startTime), "h:mm a")}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            <Button
+              className="w-full mt-6"
+              variant="outline"
+              onClick={() => setSelectedDay(null)}
+              data-testid="button-close-day"
             >
               Close
             </Button>
