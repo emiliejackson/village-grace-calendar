@@ -16,9 +16,10 @@ function parseDescription(text: string): React.ReactNode {
         const href = hrefMatch ? hrefMatch[1] : '#';
         return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-[#65809A] hover:underline">`;
       })
-      .replace(/<ul>/gi, '<ul class="list-disc list-inside ml-4 my-2">')
-      .replace(/<ol>/gi, '<ol class="list-decimal list-inside ml-4 my-2">')
-      .replace(/<li>/gi, '<li class="mb-1">');
+      .replace(/<ul>/gi, '<ul class="list-disc list-inside ml-4 my-1">')
+      .replace(/<ol>/gi, '<ol class="list-decimal list-inside ml-4 my-1">')
+      .replace(/<li>/gi, '<li class="">')
+      .replace(/<p>/gi, '<p class="my-1">');
     
     return (
       <div 
