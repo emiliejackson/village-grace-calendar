@@ -157,8 +157,30 @@ function isSameDayLocal(date1: Date, date2: Date): boolean {
          date1.getDate() === date2.getDate();
 }
 
+function getInitialDate(events: MergedEvent[]): Date {
+  const today = new Date();
+  const thisMonthStart = startOfMonth(today);
+  const thisMonthEnd = endOfMonth(today);
+
+  const hasEventsThisMonth = events.some(event => {
+    const eventStart = new Date(event.startTime);
+    return eventStart >= thisMonthStart && eventStart <= thisMonthEnd;
+  });
+
+  if (hasEventsThisMonth) return today;
+
+  const futureEvents = events
+    .map(e => new Date(e.startTime))
+    .filter(d => d >= thisMonthStart)
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (futureEvents.length > 0) return futureEvents[0];
+
+  return today;
+}
+
 export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => getInitialDate(events));
   const [selectedEvent, setSelectedEvent] = useState<MergedEvent | null>(null);
   const [selectedDay, setSelectedDay] = useState<{ day: Date; events: MergedEvent[] } | null>(null);
 
