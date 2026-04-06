@@ -30,6 +30,7 @@ async function fetchCalendarEvents() {
     for (const event of Object.values(events)) {
       if (event.type === "VEVENT") {
         const vevent = event as any;
+        if (vevent.status === "CANCELLED") continue;
         
         if (vevent.rrule) {
           try {
