@@ -68,17 +68,21 @@ async function fetchCalendarEvents() {
             });
           }
         } else {
-          calendarEvents.push({
-            id: `ical-${vevent.uid}`,
-            title: vevent.summary || "Untitled Event",
-            description: vevent.description || null,
-            startTime: vevent.start,
-            endTime: vevent.end || null,
-            location: vevent.location || null,
-            imageUrl: null,
-            createdAt: new Date(),
-            source: "google_calendar"
-          });
+          const eventStart = new Date(vevent.start);
+          const eventEnd = vevent.end ? new Date(vevent.end) : eventStart;
+          if (eventEnd >= rangeStart && eventStart <= rangeEnd) {
+            calendarEvents.push({
+              id: `ical-${vevent.uid}`,
+              title: vevent.summary || "Untitled Event",
+              description: vevent.description || null,
+              startTime: vevent.start,
+              endTime: vevent.end || null,
+              location: vevent.location || null,
+              imageUrl: null,
+              createdAt: new Date(),
+              source: "google_calendar"
+            });
+          }
         }
       }
     }
