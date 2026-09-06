@@ -1,6 +1,7 @@
 import { useState, useMemo, Fragment } from "react";
 import { type MergedEvent } from "@shared/schema";
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 
@@ -206,9 +207,36 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
     });
   };
 
-  const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
-  const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-  const goToToday = () => setCurrentDate(new Date());
+  const navigateToMonth = (direction: "previous" | "next") => {
+    const targetDate = direction === "previous"
+      ? subMonths(currentDate, 1)
+      : addMonths(currentDate, 1);
+
+    trackEvent("calendar_month_changed", {
+      direction,
+      target_month: format(targetDate, "yyyy-MM"),
+    });
+    setCurrentDate(targetDate);
+  };
+
+  const goToToday = () => {
+    trackEvent("calendar_today_clicked", {
+      from_month: format(currentDate, "yyyy-MM"),
+    });
+    setCurrentDate(new Date());
+  };
+
+  const openEvent = (event: MergedEvent, location: "calendar" | "day_list") => {
+    trackEvent("calendar_event_opened", {
+      location,
+      event_source: event.source ?? "unknown",
+      event_month: format(new Date(event.startTime), "yyyy-MM"),
+      all_day: isAllDayEvent(event),
+      has_location: Boolean(event.location),
+      has_description: Boolean(event.description),
+    });
+    setSelectedEvent(event);
+  };
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -233,7 +261,7 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={goToPreviousMonth}
+                onClick={() => navigateToMonth("previous")}
                 data-testid="button-prev-month"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -241,7 +269,7 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={goToNextMonth}
+                onClick={() => navigateToMonth("next")}
                 data-testid="button-next-month"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -297,7 +325,7 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
                 {dayEvents.slice(0, 2).map((event) => (
                   <button
                     key={event.id}
-                    onClick={() => setSelectedEvent(event)}
+                    onClick={() => openEvent(event, "calendar")}
                     className="w-full text-left px-1.5 py-0.5 md:px-2 md:py-1 text-xs rounded bg-[#65809A]/10 text-[#65809A] hover:bg-[#65809A]/20 transition-colors truncate block font-medium"
                     data-testid={`event-${event.id}`}
                   >
@@ -306,7 +334,13 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
                 ))}
                 {dayEvents.length > 2 && (
                   <button
-                    onClick={() => setSelectedDay({ day, events: dayEvents })}
+                    onClick={() => {
+                      trackEvent("calendar_day_list_opened", {
+                        date: format(day, "yyyy-MM-dd"),
+                        event_count: dayEvents.length,
+                      });
+                      setSelectedDay({ day, events: dayEvents });
+                    }}
                     className="text-xs text-gray-500 hover:text-[#65809A] px-1.5"
                     data-testid={`more-events-${format(day, 'yyyy-MM-dd')}`}
                   >
@@ -395,7 +429,7 @@ export function MonthlyCalendar({ events }: MonthlyCalendarProps) {
                   key={event.id}
                   onClick={() => {
                     setSelectedDay(null);
-                    setSelectedEvent(event);
+                    openEvent(event, "day_list");
                   }}
                   className="w-full text-left p-3 rounded-lg bg-[#65809A]/10 hover:bg-[#65809A]/20 transition-colors"
                   data-testid={`day-event-${event.id}`}

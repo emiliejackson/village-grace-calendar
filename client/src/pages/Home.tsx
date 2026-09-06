@@ -3,6 +3,7 @@ import { MonthlyCalendar } from "@/components/MonthlyCalendar";
 import { Loader2, Calendar as CalendarIcon } from "lucide-react";
 import logo from "@assets/logo.webp";
 import { Link } from "wouter";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Home() {
   const { data: events, isLoading, error } = useEvents();
@@ -15,7 +16,10 @@ export default function Home() {
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="https://www.villagegrace.org/">
+            <a
+              href="https://www.villagegrace.org/"
+              onClick={() => trackEvent("village_grace_link_clicked", { location: "header_logo" })}
+            >
               <img src={logo} alt="Village Grace Logo" className="h-12 w-auto" />
             </a>
             
@@ -23,6 +27,7 @@ export default function Home() {
           
           <a 
             href="https://www.villagegrace.org/" 
+             onClick={() => trackEvent("village_grace_link_clicked", { location: "header_link" })}
             className="text-sm font-medium text-gray-500 hover:text-primary transition-colors"
           >
             Back to Village Grace &rarr;

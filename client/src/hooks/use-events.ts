@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type CreateEventRequest, type UpdateEventRequest } from "@shared/routes";
-import { type MergedEvent } from "@shared/schema";
+import { api, buildUrl } from "@shared/routes";
+import { type CreateEventRequest, type MergedEvent, type UpdateEventRequest } from "@shared/schema";
+import { trackEvent } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 
 export function useEvents() {
@@ -50,6 +51,7 @@ export function useCreateEvent() {
       return api.events.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
+      trackEvent("admin_event_created");
       queryClient.invalidateQueries({ queryKey: [api.events.list.path] });
       toast({
         title: "Success",
@@ -87,6 +89,7 @@ export function useUpdateEvent() {
       return api.events.update.responses[200].parse(await res.json());
     },
     onSuccess: () => {
+      trackEvent("admin_event_updated");
       queryClient.invalidateQueries({ queryKey: [api.events.list.path] });
       toast({
         title: "Success",
@@ -121,6 +124,7 @@ export function useDeleteEvent() {
       }
     },
     onSuccess: () => {
+      trackEvent("admin_event_deleted");
       queryClient.invalidateQueries({ queryKey: [api.events.list.path] });
       toast({
         title: "Success",
