@@ -1,0 +1,1 @@
+- [Google Calendar rate limits](google-calendar-rate-limits.md) — cold-start requests must share one ICS fetch and serve stale cache to avoid blank calendars during Google 429s.
