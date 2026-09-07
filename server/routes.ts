@@ -33,17 +33,9 @@ async function fetchCalendarEvents() {
       const rangeStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const rangeEnd = new Date(today.getFullYear(), today.getMonth() + 6, 0);
 
-      // First pass: collect exception dates (modified or deleted single instances of
-      // recurring events). Keyed by uid -> set of day strings so we can skip those
-      // dates when expanding the base rrule.
-      // Log all VEVENTs to see what node-ical is parsing
-      for (const event of Object.values(events)) {
-        if (event.type !== "VEVENT") continue;
-        const vevent = event as any;
-        const keys = Object.keys(vevent).join(",");
-        console.log(`[VEVENT] uid=${vevent.uid} summary=${vevent.summary} start=${vevent.start} status=${vevent.status} hasRrule=${!!vevent.rrule} recurrenceid=${vevent.recurrenceid} keys=${keys}`);
-      }
-
+      // First pass: collect exception days from top-level VEVENTs that have
+      // RECURRENCE-ID set. This covers the case where node-ical surfaces
+      // modified/cancelled instances as separate top-level entries.
       const exceptionDays: Record<string, Set<string>> = {};
       for (const event of Object.values(events)) {
         if (event.type !== "VEVENT") continue;
@@ -52,7 +44,6 @@ async function fetchCalendarEvents() {
           const uid: string = vevent.uid;
           if (!exceptionDays[uid]) exceptionDays[uid] = new Set();
           const rid = new Date(vevent.recurrenceid);
-          console.log(`[EXCEPTION] uid=${uid} recurrenceid=${vevent.recurrenceid} parsed=${rid.toISOString()} dayKey=${dayKey(rid)} status=${vevent.status} newStart=${vevent.start}`);
           exceptionDays[uid].add(dayKey(rid));
         }
       }
@@ -68,8 +59,23 @@ async function fetchCalendarEvents() {
         if (vevent.status === "CANCELLED") continue;
 
         if (vevent.rrule) {
-          // Recurring base event — expand occurrences, skipping any date that has
-          // an exception (the exception VEVENT is handled separately below).
+          // Build a map from original-occurrence dayKey -> modified recurrence,
+          // using the nested `recurrences` object that node-ical attaches to the
+          // base event whenever individual instances have been modified.
+          const recurrenceByOriginalDk: Record<string, any> = {};
+          if (vevent.recurrences) {
+            for (const [key, rec] of Object.entries(vevent.recurrences)) {
+              const r = rec as any;
+              // The recurrenceid on the child points to the ORIGINAL occurrence date.
+              const originalDate = r.recurrenceid
+                ? new Date(r.recurrenceid)
+                : new Date(key);
+              if (!isNaN(originalDate.getTime())) {
+                recurrenceByOriginalDk[dayKey(originalDate)] = r;
+              }
+            }
+          }
+
           try {
             const dates = vevent.rrule.between(rangeStart, rangeEnd);
             const duration =
@@ -77,13 +83,54 @@ async function fetchCalendarEvents() {
                 ? new Date(vevent.end).getTime() - new Date(vevent.start).getTime()
                 : 0;
 
+            // Track instances that were moved to a completely different day so we
+            // can add them at their new date after the main loop.
+            const movedToNewDay: Array<{ r: any; originalDate: Date }> = [];
+
             for (const date of dates) {
               const dk = dayKey(date);
+
+              // A separate top-level VEVENT already handles this occurrence.
               if (exceptionDays[vevent.uid]?.has(dk)) {
-                console.log(`[SKIP] uid=${vevent.uid} date=${date.toISOString()} dayKey=${dk}`);
+                console.log(`[SKIP-EXCEPTION] uid=${vevent.uid} date=${date.toISOString()}`);
                 continue;
               }
 
+              const recurrence = recurrenceByOriginalDk[dk];
+              if (recurrence) {
+                if (recurrence.status === "CANCELLED") {
+                  console.log(`[CANCELLED] uid=${vevent.uid} date=${date.toISOString()}`);
+                  continue;
+                }
+
+                const newStart = new Date(recurrence.start);
+                if (dayKey(newStart) !== dk) {
+                  // Instance was moved to a different calendar day — skip the
+                  // original slot and add the event at its new date later.
+                  console.log(`[MOVED] uid=${vevent.uid} from=${date.toISOString()} to=${newStart.toISOString()}`);
+                  movedToNewDay.push({ r: recurrence, originalDate: date });
+                  continue;
+                }
+
+                // Same day but possibly different time — use the modified details.
+                const newEnd = recurrence.end ? new Date(recurrence.end) : null;
+                if ((!newEnd || newEnd >= rangeStart) && newStart <= rangeEnd) {
+                  calendarEvents.push({
+                    id: `ical-${vevent.uid}-${date.getTime()}`,
+                    title: recurrence.summary || vevent.summary || "Untitled Event",
+                    description: recurrence.description || vevent.description || null,
+                    startTime: recurrence.start,
+                    endTime: recurrence.end || null,
+                    location: recurrence.location || vevent.location || null,
+                    imageUrl: null,
+                    createdAt: new Date(),
+                    source: "google_calendar",
+                  });
+                }
+                continue;
+              }
+
+              // Normal (unmodified) occurrence.
               const endDate = duration ? new Date(date.getTime() + duration) : null;
               calendarEvents.push({
                 id: `ical-${vevent.uid}-${date.getTime()}`,
@@ -96,6 +143,26 @@ async function fetchCalendarEvents() {
                 createdAt: new Date(),
                 source: "google_calendar",
               });
+            }
+
+            // Add instances that were moved to different days.
+            for (const { r, originalDate } of movedToNewDay) {
+              const newStart = new Date(r.start);
+              const newEnd = r.end ? new Date(r.end) : newStart;
+              if (newEnd >= rangeStart && newStart <= rangeEnd) {
+                console.log(`[ADD-MOVED] uid=${vevent.uid} newStart=${newStart.toISOString()}`);
+                calendarEvents.push({
+                  id: `ical-${vevent.uid}-${originalDate.getTime()}`,
+                  title: r.summary || vevent.summary || "Untitled Event",
+                  description: r.description || vevent.description || null,
+                  startTime: r.start,
+                  endTime: r.end || null,
+                  location: r.location || vevent.location || null,
+                  imageUrl: null,
+                  createdAt: new Date(),
+                  source: "google_calendar",
+                });
+              }
             }
           } catch (rruleError) {
             console.error("Error expanding recurring event:", rruleError);
@@ -113,7 +180,7 @@ async function fetchCalendarEvents() {
             });
           }
         } else if (vevent.recurrenceid) {
-          // Modified single instance of a recurring event — show the updated version.
+          // Modified single instance surfaced as a standalone top-level VEVENT.
           const eventStart = new Date(vevent.start);
           const eventEnd = vevent.end ? new Date(vevent.end) : eventStart;
           if (eventEnd >= rangeStart && eventStart <= rangeEnd) {
