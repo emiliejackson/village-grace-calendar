@@ -36,6 +36,14 @@ async function fetchCalendarEvents() {
       // First pass: collect exception dates (modified or deleted single instances of
       // recurring events). Keyed by uid -> set of day strings so we can skip those
       // dates when expanding the base rrule.
+      // Log all VEVENTs to see what node-ical is parsing
+      for (const event of Object.values(events)) {
+        if (event.type !== "VEVENT") continue;
+        const vevent = event as any;
+        const keys = Object.keys(vevent).join(",");
+        console.log(`[VEVENT] uid=${vevent.uid} summary=${vevent.summary} start=${vevent.start} status=${vevent.status} hasRrule=${!!vevent.rrule} recurrenceid=${vevent.recurrenceid} keys=${keys}`);
+      }
+
       const exceptionDays: Record<string, Set<string>> = {};
       for (const event of Object.values(events)) {
         if (event.type !== "VEVENT") continue;
