@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import Admin from "@/pages/Admin";
 import Embed from "@/pages/Embed";
 
 function Router() {
@@ -13,8 +12,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/embed" component={Embed} />
-      <Route path="/admin" component={Admin} />
-      {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
   );

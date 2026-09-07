@@ -1,8 +1,7 @@
 import { useEvents } from "@/hooks/use-events";
 import { MonthlyCalendar } from "@/components/MonthlyCalendar";
-import { Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import logo from "@assets/logo.webp";
-import { Link } from "wouter";
 import { trackEvent } from "@/lib/analytics";
 
 export default function Home() {
@@ -57,9 +56,6 @@ export default function Home() {
           
           <div className="text-sm text-gray-500 text-center md:text-right">
             <p>&copy; {new Date().getFullYear()} Village Grace. All rights reserved.</p>
-            <Link href="/admin" className="mt-2 inline-block text-xs hover:text-primary transition-colors">
-              Admin Login
-            </Link>
           </div>
         </div>
       </footer>
