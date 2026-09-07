@@ -6,13 +6,14 @@ import { trackEvent } from "@/lib/analytics";
 
 export default function Home() {
   const { data: events, isLoading, error } = useEvents();
+  const isEmbed = new URLSearchParams(window.location.search).has("embed");
 
   // Filter to only Google Calendar events
   const calendarEvents = events?.filter(e => e.source === "google_calendar") || [];
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#ffffff]">
-      <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
+      <header className={`bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50${isEmbed ? " hidden" : ""}`}>
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a
@@ -48,7 +49,7 @@ export default function Home() {
           <MonthlyCalendar events={calendarEvents} />
         )}
       </main>
-      <footer className="bg-white border-t border-gray-100 py-8 mt-auto">
+      <footer className={`bg-white border-t border-gray-100 py-8 mt-auto${isEmbed ? " hidden" : ""}`}>
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
             <img src={logo} alt="Village Grace Logo" className="h-12 w-auto" />
