@@ -10,7 +10,7 @@ let calendarFetchPromise: Promise<any[]> | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 function dayKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`;
 }
 
 async function fetchCalendarEvents() {
