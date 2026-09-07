@@ -9,6 +9,10 @@ let cacheTimestamp = 0;
 let calendarFetchPromise: Promise<any[]> | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+function dayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
 async function fetchCalendarEvents() {
   const now = Date.now();
   if (now - cacheTimestamp < CACHE_DURATION && cachedCalendarEvents.length > 0) {
@@ -25,68 +29,108 @@ async function fetchCalendarEvents() {
       console.log("Fetching Google Calendar events...");
       const events = await ical.async.fromURL(GOOGLE_CALENDAR_ICS_URL);
 
-      const calendarEvents: any[] = [];
       const today = new Date();
       const rangeStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const rangeEnd = new Date(today.getFullYear(), today.getMonth() + 6, 0);
 
+      // First pass: collect exception dates (modified or deleted single instances of
+      // recurring events). Keyed by uid -> set of day strings so we can skip those
+      // dates when expanding the base rrule.
+      const exceptionDays: Record<string, Set<string>> = {};
       for (const event of Object.values(events)) {
-        if (event.type === "VEVENT") {
-          const vevent = event as any;
-          if (vevent.status === "CANCELLED") continue;
+        if (event.type !== "VEVENT") continue;
+        const vevent = event as any;
+        if (vevent.recurrenceid) {
+          const uid: string = vevent.uid;
+          if (!exceptionDays[uid]) exceptionDays[uid] = new Set();
+          exceptionDays[uid].add(dayKey(new Date(vevent.recurrenceid)));
+        }
+      }
 
-          if (vevent.rrule) {
-            try {
-              const dates = vevent.rrule.between(rangeStart, rangeEnd);
-              const duration =
-                vevent.end && vevent.start
-                  ? new Date(vevent.end).getTime() - new Date(vevent.start).getTime()
-                  : 0;
+      // Second pass: build the event list.
+      const calendarEvents: any[] = [];
 
-              for (const date of dates) {
-                const endDate = duration ? new Date(date.getTime() + duration) : null;
-                calendarEvents.push({
-                  id: `ical-${vevent.uid}-${date.getTime()}`,
-                  title: vevent.summary || "Untitled Event",
-                  description: vevent.description || null,
-                  startTime: date,
-                  endTime: endDate,
-                  location: vevent.location || null,
-                  imageUrl: null,
-                  createdAt: new Date(),
-                  source: "google_calendar",
-                });
-              }
-            } catch (rruleError) {
-              console.error("Error expanding recurring event:", rruleError);
+      for (const event of Object.values(events)) {
+        if (event.type !== "VEVENT") continue;
+        const vevent = event as any;
+
+        // Skip cancelled instances (deleted single occurrences show up this way).
+        if (vevent.status === "CANCELLED") continue;
+
+        if (vevent.rrule) {
+          // Recurring base event — expand occurrences, skipping any date that has
+          // an exception (the exception VEVENT is handled separately below).
+          try {
+            const dates = vevent.rrule.between(rangeStart, rangeEnd);
+            const duration =
+              vevent.end && vevent.start
+                ? new Date(vevent.end).getTime() - new Date(vevent.start).getTime()
+                : 0;
+
+            for (const date of dates) {
+              if (exceptionDays[vevent.uid]?.has(dayKey(date))) continue;
+
+              const endDate = duration ? new Date(date.getTime() + duration) : null;
               calendarEvents.push({
-                id: `ical-${vevent.uid}`,
+                id: `ical-${vevent.uid}-${date.getTime()}`,
                 title: vevent.summary || "Untitled Event",
                 description: vevent.description || null,
-                startTime: vevent.start,
-                endTime: vevent.end || null,
+                startTime: date,
+                endTime: endDate,
                 location: vevent.location || null,
                 imageUrl: null,
                 createdAt: new Date(),
                 source: "google_calendar",
               });
             }
-          } else {
-            const eventStart = new Date(vevent.start);
-            const eventEnd = vevent.end ? new Date(vevent.end) : eventStart;
-            if (eventEnd >= rangeStart && eventStart <= rangeEnd) {
-              calendarEvents.push({
-                id: `ical-${vevent.uid}`,
-                title: vevent.summary || "Untitled Event",
-                description: vevent.description || null,
-                startTime: vevent.start,
-                endTime: vevent.end || null,
-                location: vevent.location || null,
-                imageUrl: null,
-                createdAt: new Date(),
-                source: "google_calendar",
-              });
-            }
+          } catch (rruleError) {
+            console.error("Error expanding recurring event:", rruleError);
+            // Fall back to showing the base event start date.
+            calendarEvents.push({
+              id: `ical-${vevent.uid}`,
+              title: vevent.summary || "Untitled Event",
+              description: vevent.description || null,
+              startTime: vevent.start,
+              endTime: vevent.end || null,
+              location: vevent.location || null,
+              imageUrl: null,
+              createdAt: new Date(),
+              source: "google_calendar",
+            });
+          }
+        } else if (vevent.recurrenceid) {
+          // Modified single instance of a recurring event — show the updated version.
+          const eventStart = new Date(vevent.start);
+          const eventEnd = vevent.end ? new Date(vevent.end) : eventStart;
+          if (eventEnd >= rangeStart && eventStart <= rangeEnd) {
+            calendarEvents.push({
+              id: `ical-${vevent.uid}-${eventStart.getTime()}`,
+              title: vevent.summary || "Untitled Event",
+              description: vevent.description || null,
+              startTime: vevent.start,
+              endTime: vevent.end || null,
+              location: vevent.location || null,
+              imageUrl: null,
+              createdAt: new Date(),
+              source: "google_calendar",
+            });
+          }
+        } else {
+          // Plain non-recurring event.
+          const eventStart = new Date(vevent.start);
+          const eventEnd = vevent.end ? new Date(vevent.end) : eventStart;
+          if (eventEnd >= rangeStart && eventStart <= rangeEnd) {
+            calendarEvents.push({
+              id: `ical-${vevent.uid}`,
+              title: vevent.summary || "Untitled Event",
+              description: vevent.description || null,
+              startTime: vevent.start,
+              endTime: vevent.end || null,
+              location: vevent.location || null,
+              imageUrl: null,
+              createdAt: new Date(),
+              source: "google_calendar",
+            });
           }
         }
       }
