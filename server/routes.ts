@@ -43,7 +43,9 @@ async function fetchCalendarEvents() {
         if (vevent.recurrenceid) {
           const uid: string = vevent.uid;
           if (!exceptionDays[uid]) exceptionDays[uid] = new Set();
-          exceptionDays[uid].add(dayKey(new Date(vevent.recurrenceid)));
+          const rid = new Date(vevent.recurrenceid);
+          console.log(`[EXCEPTION] uid=${uid} recurrenceid=${vevent.recurrenceid} parsed=${rid.toISOString()} dayKey=${dayKey(rid)} status=${vevent.status} newStart=${vevent.start}`);
+          exceptionDays[uid].add(dayKey(rid));
         }
       }
 
@@ -68,7 +70,11 @@ async function fetchCalendarEvents() {
                 : 0;
 
             for (const date of dates) {
-              if (exceptionDays[vevent.uid]?.has(dayKey(date))) continue;
+              const dk = dayKey(date);
+              if (exceptionDays[vevent.uid]?.has(dk)) {
+                console.log(`[SKIP] uid=${vevent.uid} date=${date.toISOString()} dayKey=${dk}`);
+                continue;
+              }
 
               const endDate = duration ? new Date(date.getTime() + duration) : null;
               calendarEvents.push({
