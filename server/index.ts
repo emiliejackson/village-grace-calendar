@@ -22,11 +22,9 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-app.use((req, res, next) => {
-  if (req.path === "/embed" || req.path.startsWith("/embed")) {
-    res.removeHeader("X-Frame-Options");
-    res.setHeader("Content-Security-Policy", "frame-ancestors *");
-  }
+app.use((_req, res, next) => {
+  res.removeHeader("X-Frame-Options");
+  res.setHeader("Content-Security-Policy", "frame-ancestors *");
   next();
 });
 
